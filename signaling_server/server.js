@@ -14,22 +14,27 @@ wss.on('connection', function(connection) {
       console.log(message.data.type)
       if(message.data.type  === 'offer') {
          // console.log('receive offer')
-         if(activeConnections[message.username]) {
-            activeConnections[message.username].send(JSON.stringify(message))
+         if(activeConnections[message.to]) {
+            activeConnections[message.to].send(JSON.stringify(message))
          } else {
             console.log('user not connected')
          }
       } 
       else if(message.data.type === 'answer') {
          console.log('receive answer')
-         if(activeConnections[message.username]) {
-            activeConnections[message.username].send(JSON.stringify(message))
+         if(activeConnections[message.to]) {
+            activeConnections[message.to].send(JSON.stringify(message))
          } else {
             console.log('user not connected')
          }
       }
+      else if(message.data.type === 'candidate') {
+         if(activeConnections[message.to]) {
+            activeConnections[message.to].send(JSON.stringify(message))
+         }
+      }
       else if(message.data.type === 'user') {
-         activeConnections[message.data.username] = connection
+         activeConnections[message.data.from] = connection
          console.log('user' + activeConnections)
       }
       console.log("Got message from a user:", message);
