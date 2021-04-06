@@ -1,0 +1,1 @@
+docker run --name postgres-webrtc-chat -e POSTGRES_PASSWORD=postgres -p 5035:5034 -v "postgres_webrtc_chat:/var/lib/postgresql/data" postgres
