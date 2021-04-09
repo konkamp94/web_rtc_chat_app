@@ -4,31 +4,32 @@ class RTCPeerConnectionHandler {
         this.peerConnection = peerConnection
     }
 
-    async createOffer() {
+    createOffer = async () => {
         const offer = await this.peerConnection.createOffer()
         await this.peerConnection.setLocalDescription(offer);
         return offer
     }
 
-    async createAnswer() {
+    createAnswer = async () => {
         const answer = await this.peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
         return answer
     }
 
-    async receiveOfferAndCreateAnswer(message) {
+    receiveOfferAndCreateAnswer = async (message) => {
         const remoteDescr = new RTCSessionDescription(message.data);
         await this.peerConnection.setRemoteDescription(remoteDescr);
         return await this.createAnswer()
     }
 
-    async receiveAnswer(message) {
+    receiveAnswer = async (message) => {
         const remoteDescr = new RTCSessionDescription(message.data);
         await this.peerConnection.setRemoteDescription(remoteDescr)
     }
 
-    async receiveIceCandidate(message) {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(message.iceCandidate));
+    receiveIceCandidate = async (message) => {
+        console.log(message)
+        await peerConnection.addIceCandidate(new RTCIceCandidate(message.data.candidate));
     }
 
 

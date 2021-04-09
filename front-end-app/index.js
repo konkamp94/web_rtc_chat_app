@@ -1,6 +1,6 @@
 let username = prompt('Enter your username')
 let contactUsername = prompt('Enter contact username')
-
+let accessToken = prompt("Pass Access Token")
 const connectButton = document.getElementById("connect-button")
 // Getting the stream of the webcam and feed it to the videoCam element
 const videoCam = document.getElementById("videoCam")
@@ -18,12 +18,14 @@ if (navigator.mediaDevices.getUserMedia) {
 // create RTCPeer Connection   
 const configuration = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]}
 const peerConnection = new webkitRTCPeerConnection(configuration);
-
+// open connection to the server   
+serverConnection = new WebSocket('ws://localhost:9090/signaling');
 const rtcHandler = new RTCPeerConnectionHandler(peerConnection);
+const signal = new SignalingHandler(serverConnection);
 
 peerConnection.onicecandidate = (event) => {
   if(event.candidate) {
-    serverConnection.send(JSON.stringify({data: { type: 'candidate', candidate: event.candidate }, from: username, to: contactUsername }))
+    signal.sendCandidate(event.candidate, username, contactUsername)
   }
 }
 
@@ -34,18 +36,15 @@ peerConnection.ondatachannel = (event) => {
   }
 }
 
-// open connection to the server   
-serverConnection = new WebSocket('ws://localhost:9090');
-
 serverConnection.onopen = (event) => {
   let textChannel
-  serverConnection.send(JSON.stringify({ data: { type: 'user', from: username, to: contactUsername} }))
+  signal.sendAuthenticationMessage(accessToken, username, contactUsername)
   
   connectButton.addEventListener('click', () => {
     textChannel = peerConnection.createDataChannel('mychannel')
     rtcHandler.createOffer()
       .then(offer => {
-        serverConnection.send(JSON.stringify({ data: offer , from: username, to: contactUsername}))
+        signal.sendOfferOrAnswer(offer, username, contactUsername)
       })
   })
 
@@ -56,15 +55,17 @@ serverConnection.onopen = (event) => {
         console.log('receive Offer ' + message.data)
         rtcHandler.receiveOfferAndCreateAnswer(message)
             .then(answer => {
-              serverConnection.send(JSON.stringify({ data: answer, from: username, to: contactUsername }))
+              signal.sendOfferOrAnswer(answer, username, contactUsername)
             });
       }
       else if(message.data.type === 'answer') {
         console.log('receive Answer ' + message.data)
         rtcHandler.receiveAnswer(message);
       }
-      else if(message.data.type == 'candidate') {
+      else if(message.data.type === 'candidate') {
         rtcHandler.receiveIceCandidate(message);
+      } else if(message.data.type === 'authentication error') {
+        console.log(message)
       }
     }
 
