@@ -38,12 +38,12 @@ serverConnection.onopen = (event) => {
         }
       } 
 
-      peerConnections[contactUsername].peerConnection.ondatachannel = (event) => {
-        var dataChannel = event.channel
-        dataChannel.onmessage = (message) => {
-          console.log(message)
-        }
-      }
+      // peerConnections[contactUsername].peerConnection.ondatachannel = (event) => {
+      //   var dataChannel = event.channel
+      //   dataChannel.onmessage = (message) => {
+      //     console.log(message)
+      //   }
+      // }
 
       dataChannels[contactUsername] = peerConnections[contactUsername].peerConnection.createDataChannel('chat-messages')
 
@@ -55,6 +55,9 @@ serverConnection.onopen = (event) => {
               document.getElementById('send').addEventListener('click', () => {
                 dataChannels[contactUsername].send({ message:  document.getElementById('send-message-input').value })
               })
+              dataChannel.onmessage = (message) => {
+                console.log(message)
+              }
             }
         }
       }
