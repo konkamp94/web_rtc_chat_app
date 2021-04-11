@@ -28,7 +28,6 @@ app.use(cors())
 // Configuring body parser
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-authenticateSocketConnection('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImNsaWVudDEiLCJpYXQiOjE2MTc4NzAyODYsImV4cCI6MTYxNzg3MDMwNH0.Hnft9hQsvzNf8VDtZAWTPTMe6D0rIHI9nWz7tTQ20JI')
 app.post('/register', (req, res) => {
       bcrypt.hash(req.body.password, 10, function(err, hash) {
          req.body.password = hash;

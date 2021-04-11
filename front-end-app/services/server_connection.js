@@ -3,9 +3,9 @@ class SignalingHandler {
         this.serverConnection = serverConnection
     }
 
-    sendAuthenticationMessage = (accessToken, from, to) => {
+    sendAuthenticationMessage = (accessToken, from) => {
         this.serverConnection.send(
-            JSON.stringify({ data: { type: 'authentication', accessToken }, from, to })
+            JSON.stringify({ data: { type: 'authentication', accessToken }, from })
         )
     }
 

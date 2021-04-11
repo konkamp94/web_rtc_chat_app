@@ -27,11 +27,12 @@
                 <video id='videoCam'  autoplay="true" style=" width: 100%; height:100%;"></video>
             </div>
             <div id='chat-div' class="col-md-4">
-                <div>
+                <div id="messages">
                     <p>messages</p>
                     ...
                 </div>
                 <textarea class="form-control" id="send-message-input" rows="3"></textarea>
+                <button id="send" class="btn btn-primary">Send Message</button>
             </div>
         </div>
         <div class="row">
@@ -45,7 +46,7 @@
         </div>
     </div>
     <script src="services/server_connection.js"></script>
-    <script src="./services/rtc_connection_handler.js"></script>
+    <script src="./services/custom_rtc_peer_connection.js"></script>
     <script src='index.js'></script>
 </body>
 </html>

@@ -1,7 +1,10 @@
-class RTCPeerConnectionHandler {
+class CustomRTCPeerConnection {
 
-    constructor(peerConnection) {
-        this.peerConnection = peerConnection
+    constructor(username, contactUsername) {
+        this.configuration = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]}
+        this.peerConnection = new webkitRTCPeerConnection(this.configuration);
+        this.username = username
+        this.contactUsername = contactUsername
     }
 
     createOffer = async () => {
@@ -12,7 +15,7 @@ class RTCPeerConnectionHandler {
 
     createAnswer = async () => {
         const answer = await this.peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
+        await this.peerConnection.setLocalDescription(answer);
         return answer
     }
 
@@ -29,7 +32,7 @@ class RTCPeerConnectionHandler {
 
     receiveIceCandidate = async (message) => {
         console.log(message)
-        await peerConnection.addIceCandidate(new RTCIceCandidate(message.data.candidate));
+        await this.peerConnection.addIceCandidate(new RTCIceCandidate(message.data.candidate));
     }
 
 

@@ -1,5 +1,5 @@
 let username = prompt('Enter your username')
-let contactUsername = prompt('Enter contact username')
+// let contactUsername = prompt('Enter contact username')
 let accessToken = prompt("Pass Access Token")
 const connectButton = document.getElementById("connect-button")
 // Getting the stream of the webcam and feed it to the videoCam element
@@ -16,69 +16,118 @@ if (navigator.mediaDevices.getUserMedia) {
   }
 
 // create RTCPeer Connection   
-const configuration = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]}
-const peerConnection = new webkitRTCPeerConnection(configuration);
 // open connection to the server   
+let peerConnections = {}
+let dataChannels = {}
 serverConnection = new WebSocket('ws://localhost:9090/signaling');
-const rtcHandler = new RTCPeerConnectionHandler(peerConnection);
 const signal = new SignalingHandler(serverConnection);
 
-peerConnection.onicecandidate = (event) => {
-  if(event.candidate) {
-    signal.sendCandidate(event.candidate, username, contactUsername)
-  }
-}
-
-peerConnection.ondatachannel = (event) => {
-  var dataChannel = event.channel
-  dataChannel.onmessage = (message) => {
-    console.log(message)
-  }
-}
-
 serverConnection.onopen = (event) => {
-  let textChannel
-  signal.sendAuthenticationMessage(accessToken, username, contactUsername)
   
+  signal.sendAuthenticationMessage(accessToken, username)
+
   connectButton.addEventListener('click', () => {
-    textChannel = peerConnection.createDataChannel('mychannel')
-    rtcHandler.createOffer()
-      .then(offer => {
-        signal.sendOfferOrAnswer(offer, username, contactUsername)
-      })
+    let contactUsername = document.getElementById('friend-username').value;
+    if(!peerConnections[contactUsername]) {
+
+      peerConnections[contactUsername] = new CustomRTCPeerConnection(username, contactUsername);
+
+      peerConnections[contactUsername].peerConnection.onicecandidate = (event) => {
+        if(event.candidate) {
+          signal.sendCandidate(event.candidate, username, contactUsername)
+        }
+      } 
+
+      peerConnections[contactUsername].peerConnection.ondatachannel = (event) => {
+        var dataChannel = event.channel
+        dataChannel.onmessage = (message) => {
+          console.log(message)
+        }
+      }
+
+      dataChannels[contactUsername] = peerConnections[contactUsername].peerConnection.createDataChannel('chat-messages')
+
+      peerConnections[contactUsername].peerConnection.onconnectionstatechange = (event) => {
+        console.log(event)
+        if (peerConnections[contactUsername].peerConnection.connectionState === 'connected') {
+            console.log('PeersConnected')
+            dataChannels[contactUsername].onopen = () => {
+              document.getElementById('send').addEventListener('click', () => {
+                dataChannels[contactUsername].send({ message:  document.getElementById('send-message-input').value })
+              })
+            }
+        }
+      }
+
+      peerConnections[contactUsername].createOffer()
+        .then(offer => {
+          signal.sendOfferOrAnswer(offer, username, contactUsername)
+        })
+    } else {
+      console.log('connection exists')
+    }
   })
 
     serverConnection.onmessage = (messageEvent) => {
       
-      message = JSON.parse(messageEvent.data)
+      message = JSON.parse(messageEvent.data);
+
+      if(!peerConnections[message.from]) {
+
+        peerConnections[message.from] = new CustomRTCPeerConnection(username, message.from);
+
+        peerConnections[message.from].peerConnection.onicecandidate = (event) => {
+          if(event.candidate) {
+            signal.sendCandidate(event.candidate, username, message.from)
+          }
+        };  
+  
+        peerConnections[message.from].peerConnection.ondatachannel = (event) => {
+          dataChannels[message.from] = event.channel;
+
+          dataChannels[message.from].onmessage = (message) => {
+            console.log(message)
+          }
+          
+          dataChannels[message.from].onopen = () => {
+            document.getElementById('send').addEventListener('click', () => {
+              dataChannels[message.from].send({ message:  document.getElementById('send-message-input').value })
+            })
+          }
+        }
+
+        peerConnections[message.from].peerConnection.onconnectionstatechange = (event) => {
+          if (peerConnections[message.from].peerConnection === 'connected') {
+              console.log('PeersConnected')
+
+              dataChannels[contactUsername].onopen = () => {
+                document.getElementById('send').addEventListener('click', () => {
+                  dataChannels[contactUsername].send({ message:  document.getElementById('send-message-input').value });
+                })
+              } 
+          }
+        }
+
+      }
+
       if(message.data.type === 'offer') {
         console.log('receive Offer ' + message.data)
-        rtcHandler.receiveOfferAndCreateAnswer(message)
+        peerConnections[message.from].receiveOfferAndCreateAnswer(message)
             .then(answer => {
-              signal.sendOfferOrAnswer(answer, username, contactUsername)
+              signal.sendOfferOrAnswer(answer, username, message.from)
             });
       }
       else if(message.data.type === 'answer') {
         console.log('receive Answer ' + message.data)
-        rtcHandler.receiveAnswer(message);
+        peerConnections[message.from].receiveAnswer(message);
       }
       else if(message.data.type === 'candidate') {
-        rtcHandler.receiveIceCandidate(message);
+        console.log('receive candidate')
+        peerConnections[message.from].receiveIceCandidate(message);
       } else if(message.data.type === 'authentication error') {
         console.log(message)
       }
-    }
 
-    peerConnection.onconnectionstatechange = (event) => {
-      if (peerConnection.connectionState === 'connected') {
-          console.log('PeersConnected')
-          if(username === 'oman') {
-            textChannel.onopen = () => {
-            textChannel.send(JSON.stringify({ message: 'hey P2P CONNECTION' }))
-          // Peers connected!
-            }
-          }
-    }
+
   }
-
 }
