@@ -14,7 +14,7 @@ if (navigator.mediaDevices.getUserMedia) {
         console.log("Something went wrong!");
       });
   }
-
+createElement('messages','PARAGRAGH', 'heeye')
 // create RTCPeer Connection   
 // open connection to the server   
 let peerConnections = {}
@@ -31,7 +31,6 @@ serverConnection.onopen = (event) => {
     if(!peerConnections[contactUsername]) {
 
       peerConnections[contactUsername] = new CustomRTCPeerConnection(username, contactUsername);
-
       peerConnections[contactUsername].peerConnection.onicecandidate = (event) => {
         if(event.candidate) {
           signal.sendCandidate(event.candidate, username, contactUsername)
@@ -48,17 +47,25 @@ serverConnection.onopen = (event) => {
       dataChannels[contactUsername] = peerConnections[contactUsername].peerConnection.createDataChannel('chat-messages')
 
       peerConnections[contactUsername].peerConnection.onconnectionstatechange = (event) => {
-        console.log(event)
+        console.log(peerConnections[contactUsername].peerConnection.connectionState)
+
         if (peerConnections[contactUsername].peerConnection.connectionState === 'connected') {
             console.log('PeersConnected')
             dataChannels[contactUsername].onopen = () => {
               document.getElementById('send').addEventListener('click', () => {
                 dataChannels[contactUsername].send({ message:  document.getElementById('send-message-input').value })
               })
-              dataChannel.onmessage = (message) => {
+              dataChannels[contactUsername].onmessage = (message) => {
+                createElement('messages','PARAGRAPH',message.data)
                 console.log(message)
               }
             }
+        } else if(peerConnections[contactUsername].peerConnection.connectionState === 'failed') {
+            peerConnections[contactUsername].peerConnection.restartIce();
+            peerConnections[contactUsername].createOffer()
+            .then(offer => {
+              signal.sendOfferOrAnswer(offer, username, contactUsername)
+            })
         }
       }
 
@@ -74,7 +81,7 @@ serverConnection.onopen = (event) => {
     serverConnection.onmessage = (messageEvent) => {
       
       message = JSON.parse(messageEvent.data);
-
+      console.log(message)
       if(!peerConnections[message.from]) {
 
         peerConnections[message.from] = new CustomRTCPeerConnection(username, message.from);
@@ -89,6 +96,7 @@ serverConnection.onopen = (event) => {
           dataChannels[message.from] = event.channel;
 
           dataChannels[message.from].onmessage = (message) => {
+            createElement('messages','PARAGRAPH',message.data)
             console.log(message)
           }
           
