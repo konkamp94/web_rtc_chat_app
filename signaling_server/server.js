@@ -10,6 +10,8 @@ const cors = require('cors');
 const bcrypt = require ('bcrypt');
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
+const { ValidationError }  = require('sequelize');
+
 // reads the env file and sets the environment variables
 dotenv.config();
 
@@ -30,14 +32,34 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.post('/register', (req, res) => {
       bcrypt.hash(req.body.password, 10, function(err, hash) {
+         if(err) {
+            res.status(500).json({ error: err });
+         }
+
          req.body.password = hash;
-         User.create(req.body)
-         .then((newUser) => {
-            res.json(newUser)
-         })
-         .catch(error => {
-            res.status(400).json(error)
-         })
+
+         User.findOne({ where: { username: req.body.username } })
+         .then(user =>{ 
+            console.log(user)
+            if(user === null) {
+               User.create(req.body)
+               .then((newUser) => {
+                  res.json({newUser})
+               })
+               .catch(error => {
+                  if(error instanceof ValidationError){
+                     console.warn(error)
+                     res.status(400).json(error.message)
+                  } else {
+                     console.warn(error)
+                     throw error
+                  }
+               }) 
+            } else {
+               console.log('exists')
+               res.status(400).json({message: 'username already exists'})
+            }
+         });
       });
 })
 
