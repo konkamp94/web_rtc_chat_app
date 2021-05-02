@@ -1,23 +1,68 @@
 import { React, Component } from 'react'
 import './App.css';
 import Message from './Message/Message'
-import Login from './Login/Login'
+import LoginOrRegister from './Login/Login'
 import {
   BrowserRouter as Router,
   Switch,
   Route,
   Link
 } from "react-router-dom";
+import AuthService from './Services/AuthService';
+// import AuthService from './Services/AuthService'
 
 class App extends Component{
   
+  constructor() {
+    super()
+    this.authService = new AuthService()
+  }
+
   state = {
-    isAuthenticated: false
+    isAuthenticated: false,
+    formType: 'login'
+  }
+
+  onClickLogin = (username, password) => {
+    this.authService.login(username, password)
+    .then(res => {
+      window.localStorage.setItem('accessToken', res.data.accessToken)
+      window.localStorage.setItem('refreshToken', res.data.refreshToken)
+      this.setState({
+          ...this.state,
+          isAuthenticated: true
+        }
+      )
+    })
+    .catch(error => console.log(error))
+  }
+
+  onClickRegister = (username, password) => {
+    this.authService.register(username, password)
+    .then(res => { 
+      this.setState({
+        ...this.state,
+        formType: 'login'
+      })
+      console.log(res) 
+    })
+    .catch(error => console.log(error))
+  }
+
+  toggleFormType = () => {
+    let newFormType = this.state.formType === 'login' ? 'register' : 'login'
+    this.setState({
+      ...this.state,
+      formType: newFormType
+    })
   }
 
   render(){
 
-    let dom = <Login/>
+    let dom = <LoginOrRegister formType={this.state.formType}
+                               toggleFormType={this.toggleFormType} 
+                               onClickLogin={this.onClickLogin} 
+                               onClickRegister={this.onClickRegister}/>
 
     if(this.state.isAuthenticated) {
       dom = 

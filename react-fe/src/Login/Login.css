@@ -1,0 +1,7 @@
+.message { 
+    cursor: pointer;
+}
+
+.message:hover {
+    color: blueviolet;
+}

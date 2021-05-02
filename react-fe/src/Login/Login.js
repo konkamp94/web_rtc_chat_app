@@ -1,52 +1,54 @@
-import { React, Component } from 'react'
-import TextField from '@material-ui/core/TextField';
-import Container from '@material-ui/core/Container';
-import Grid from '@material-ui/core/Grid';
+import { React, Component, useState } from 'react'
+import axios from 'axios'
+import { Container, Button, Form, Row, Card, Col } from 'react-bootstrap';
+import { message } from './Login.css'
+const LoginOrRegister = (props) => {
 
-class Login extends Component  {
+    let usernameInput;
+    let passwordInput;
+    let button;
+    let message;
 
-    constructor(props) {
-        super(props)
-        this.state = {
-            username: '',
-            password:''
-        }
+    if(props.formType === 'login') {
+        button = <Button onClick={() => props.onClickLogin(usernameInput.value, passwordInput.value)} variant="primary">
+            Login
+        </Button>
+        message ='not register?'
+    } else if(props.formType === 'register') {
+        button = <Button onClick={() => props.onClickRegister(usernameInput.value, passwordInput.value)} variant="primary">
+            Register
+        </Button>
+        message= 'already registered?'
     }
 
-    render() {
-        return (
-            <div>
-                {/* <label htmlFor='username'>Username</label>
-                <input id='username' type='text' placeholder='Username'></input> */}
-                    <Grid container 
-                      direction="column"
-                      alignItems="center"
-                      justify="center"
-                      style={{ minHeight: '100vh' }}
-                    >
-                        <Grid item xs={12}>
-                            <TextField
-                                    id="password1"
-                                    label="Password"
-                                    type="password"
-                                    autoComplete="current-password"
-                                />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                    id="password"
-                                    label="Password"
-                                    type="password"
-                                    autoComplete="current-password"
-                                />
-                        </Grid>
-                    </Grid>
-                {/* <p>Hi {props.name}</p>
-                {props.children} */}
-            </div>
-        );
-    }
+    return (
+        <Container>
+                <h1 style={{textAlign: 'center'}}>WebRTC Application</h1>
+                <Row className="justify-content-center">
+                    <Col className="align-self-center" sm={6}>
+                        <Card>
+                        <Card.Body>
+                            <Form>
+                            <Form.Group controlId="username">
+                                <Form.Label>Username</Form.Label>
+                                <Form.Control ref={(ref) => {usernameInput = ref}} type="text" placeholder="Username" />
+                            </Form.Group>
+                            <Form.Group controlId="password">
+                                <Form.Label>Password</Form.Label>
+                                <Form.Control ref={(ref) => {passwordInput = ref}} type="password" placeholder="Password" />
+                            </Form.Group>
+                            {button}
+                            </Form>
+                        </Card.Body>
+                        </Card>
+                        <p onClick={() => props.toggleFormType()} className='message'>
+                            {message}
+                        </p>
+                    </Col>
+                </Row>
+        </Container>
+    );
 
 }
 
-export default Login
+export default LoginOrRegister
