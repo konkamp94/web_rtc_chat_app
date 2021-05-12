@@ -30,6 +30,7 @@ app.use(cors())
 // Configuring body parser
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
 app.post('/register', (req, res) => {
       bcrypt.hash(req.body.password, 10, function(err, hash) {
          if(err) {
@@ -85,6 +86,29 @@ app.post('/login', (req,res) => {
          .catch(error => {
             res.status(400).json({message: 'Wrong Username or Password'})
          })
+})
+
+//TO DO: add a middleware for authentication
+app.get('/user', (req,res) => {
+   const usernameSearchString = req.query.username
+   const users = User.findOne({
+      where:{
+         username: usernameSearchString
+      }
+   })
+   .then((result) => {
+      console.warn(result)
+      if(result) {
+         let isOnline = activeConnections[result.username] ? true : false
+         console.warn(activeConnections[result.username])
+         res.status(200).json({ username: result.username, description: 'desc', isOnline })
+      } else {
+         res.status(404).json({message: `user with username ${usernameSearchString} not found` })
+      }
+   })
+   .catch((err) => {
+      res.status(500).json(err)
+   })
 })
 
 let server = http.createServer(app);

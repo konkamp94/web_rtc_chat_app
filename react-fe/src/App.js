@@ -2,27 +2,43 @@ import { React, Component } from 'react'
 import './App.css';
 import Message from './Message/Message'
 import LoginOrRegister from './Login/Login'
+import HomeSearch from './HomeSearch/HomeSearch'
+import OpenConnectionsTabs from './OpenConnectionTabs/OpenConnectionTabs'
 import {
   BrowserRouter as Router,
   Switch,
   Route,
   Link
 } from "react-router-dom";
+import { Navbar, Nav, NavDropdown} from 'react-bootstrap'
+import {LinkContainer} from 'react-router-bootstrap'
+import { Container , Row, Col, ListGroup } from 'react-bootstrap'
 import AuthService from './Services/AuthService';
-// import AuthService from './Services/AuthService'
+import SearchService from './Services/SearchService';
+import HandleConnectionsService from './Services/HandleConnectionsService';
+
 
 class App extends Component{
   
   constructor() {
-    super()
-    this.authService = new AuthService()
+    super();
+    this.authService = new AuthService();
+    this.searchService = new SearchService();
+    this.HandleConnectionsService = new HandleConnectionsService();
   }
 
   state = {
-    isAuthenticated: false,
-    formType: 'login'
-  }
+    isAuthenticated: window.localStorage.getItem('accessToken') ? true : false,
 
+    //variable for the state of LoginOrRegisterComponent
+    formType: 'login',
+
+    //found user
+    foundUser: null,
+    notFoundMessage: false
+  };
+
+  // LoginOrRegister component
   onClickLogin = (username, password) => {
     this.authService.login(username, password)
     .then(res => {
@@ -34,7 +50,7 @@ class App extends Component{
         }
       )
     })
-    .catch(error => console.log(error))
+    .catch(error => console.log(error.response.message))
   }
 
   onClickRegister = (username, password) => {
@@ -46,7 +62,7 @@ class App extends Component{
       })
       console.log(res) 
     })
-    .catch(error => console.log(error))
+    .catch(error => console.log(error.response.data.message))
   }
 
   toggleFormType = () => {
@@ -55,6 +71,34 @@ class App extends Component{
       ...this.state,
       formType: newFormType
     })
+  }
+
+  // HomeSearch component
+  onClickSearch = (username) => {
+    this.searchService.searchByUsername(username)
+      .then((res) => {
+        console.log(res)
+        if(res.status === 200) {
+          this.setState({
+            ...this.state,
+            foundUser: {
+              username: res.data.username,
+              description: res.data.description,
+              isOnline: res.data.isOnline
+            },
+            notFoundMessage: false
+          });
+        }
+      })
+      .catch(error => {
+        if(error.response.status === 404) {
+            this.setState({
+              ...this.state,
+              foundUser: null,
+              notFoundMessage : true
+            });
+        }
+      })
   }
 
   render(){
@@ -68,29 +112,40 @@ class App extends Component{
       dom = 
       (
       <Router>
-        <div>
-          <nav>
-            <ul>
-              <li>
-                <Link to="/">Home</Link>
-              </li>
-              <li>
-                <Link to="/about">About</Link>
-              </li>
-            </ul>
-          </nav>
 
-          {/* A <Switch> looks through its children <Route>s and
-              renders the first one that matches the current URL. */}
-          <Switch>
-            <Route exact path="/">
-              <h1>Home</h1>
-            </Route>
-            <Route exact path="/about">
-              <h1>About</h1>
-            </Route>
-          </Switch>
-        </div>
+       {/* simple bs */}
+      <Navbar bg="light" expand="md">
+        <Navbar.Brand>WebRTC Chat</Navbar.Brand>
+        <Navbar.Toggle aria-controls="basic-navbar-nav"/>
+        <Navbar.Collapse id="basic-navbar-nav">
+          <Nav>
+            <LinkContainer to="/">
+              <Nav.Link>Home</Nav.Link>
+            </LinkContainer>
+            <LinkContainer to="/about">
+              <Nav.Link>Chat</Nav.Link>
+            </LinkContainer>
+          </Nav>
+        </Navbar.Collapse>
+      </Navbar>
+        <Row style={{marginTop: '16px'}}>
+          <Col sm={2}>
+            <OpenConnectionsTabs></OpenConnectionsTabs>
+          </Col>
+          <Col sm={10}>
+            <Switch>
+              <Route exact path="/">
+                <HomeSearch onClickSearch={this.onClickSearch}
+                            paramsForUserSearchResult={{ user: this.state.foundUser, notFoundMessage: this.state.notFoundMessage }}
+                > 
+                </HomeSearch>
+              </Route>
+              <Route exact path="/about">
+                <h1>About</h1>
+              </Route>
+            </Switch>
+          </Col>
+        </Row>
       </Router>
       )
     }
