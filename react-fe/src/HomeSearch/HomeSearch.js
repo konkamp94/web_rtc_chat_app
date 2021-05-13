@@ -4,9 +4,10 @@ import UserSearchResult from  '../UserSearchResult/UserSearchResult'
 
 const HomeSearch = (props) => {
     let searchByUsernameInput
-    let user = props.paramsForUserSearchResult.user
-    let notFoundMessage = props.paramsForUserSearchResult.notFoundMessage 
-    
+    // let user = props.paramsForUserSearchResult.user
+    // let notFoundMessage = props.paramsForUserSearchResult.notFoundMessage 
+    // let onClickConnect = props.paramsForUserSearchResult.onClickConnect
+
     return (
         <Container>
             <Row className="form-group align-items-end">
@@ -17,7 +18,8 @@ const HomeSearch = (props) => {
                    <button className="btn btn-primary" style={{width:'100%'}} onClick={() => props.onClickSearch(searchByUsernameInput.value)}> Search </button>
                 </Col>
             </Row>
-            <UserSearchResult user={user} notFoundMessage={notFoundMessage}> </UserSearchResult> 
+            {/* searchResult */}
+            {props.children}
         </Container>
     )
 

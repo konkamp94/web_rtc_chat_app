@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import jwt_decode from "jwt-decode";
 import axios from 'axios'
 
 export default class AuthService extends Component{
@@ -6,6 +7,10 @@ export default class AuthService extends Component{
 
     isAuthenticated = () => {
         return this.isAuthenticated
+    }
+
+    getDecodedJwt(accessToken) {
+        return jwt_decode(accessToken)
     }
 
     login = (username, password) => {

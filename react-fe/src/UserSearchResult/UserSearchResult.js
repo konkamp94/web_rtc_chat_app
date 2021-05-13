@@ -31,7 +31,7 @@ const UserSearchResult = (props) => {
                                 <Card.Text>
                                     {props.user.description}
                                 </Card.Text>
-                                <Button variant="primary">Connect</Button>
+                                <Button variant="primary" onClick={() => props.onClickConnect()}>Connect</Button>
                             </Card.Body>
                         </Card>
                     </Col>
