@@ -6,16 +6,13 @@ import HomeSearch from './HomeSearch/HomeSearch'
 import UserSearchResult from './UserSearchResult/UserSearchResult'
 import OpenConnectionsTabs from './OpenConnectionTabs/OpenConnectionTabs'
 import {
-  BrowserRouter as Router,
   Switch,
   Route,
-  withRouter,
-  Redirect,
-  Linkimport
+  withRouter
 } from "react-router-dom";
 import { Navbar, Nav, NavDropdown} from 'react-bootstrap'
 import {LinkContainer} from 'react-router-bootstrap'
-import { Container , Row, Col, ListGroup } from 'react-bootstrap'
+import { Row, Col} from 'react-bootstrap'
 import AuthService from './Services/AuthService';
 import SearchService from './Services/SearchService';
 import SignalingService from './Services/SignalingService';
@@ -104,14 +101,20 @@ class App extends Component{
             }
     
             this.state.peerConnections[message.from].peerConnection.onconnectionstatechange = (event) => {
-              if (this.state.peerConnections[message.from].peerConnection === 'connected') {
+              console.log(this.state.peerConnections[message.from].peerConnection.connectionState)
+              if (this.state.peerConnections[message.from].peerConnection.connectionState === 'connected') {
                   console.log('PeersConnected')
-    
-                  this.state.dataChannels[message.from].onopen = () => {
-                    document.getElementById('send').addEventListener('click', () => {
-                      this.state.dataChannels[message.from].send({ message:  document.getElementById('send-message-input').value });
-                    })
-                  } 
+  
+              } else if(this.state.peerConnections[message.from].peerConnection.connectionState === 'disconnected') {
+                let newPeerConnections = this.state.peerConnections;
+                let newDataChannels = this.state.dataChannels;
+                delete newPeerConnections[message.from];
+                delete newDataChannels[message.from];
+                this.setState({
+                  ...this.state,
+                  peerConnections: newPeerConnections,
+                  dataChannels: newDataChannels
+                });
               }
             }
     
@@ -178,11 +181,14 @@ class App extends Component{
               // this.setState({ ...this.state, redirect: "/chat" });
               console.log('PeersConnected')
               this.state.dataChannels[contactUsername].onopen = () => {
+                console.log('ChatOpened')
+
                 this.props.history.push('/chat')
-                this.setState({
-                  ...this.state,
-                  redirect:'/chat'
-                })
+                this.forceUpdate()
+                // this.setState({
+                //   ...this.state,
+                //   redirect:'/chat'
+                // })
                 // document.getElementById('send').addEventListener('click', () => {
                 //   this.state.dataChannels[contactUsername].send({ message:  document.getElementById('send-message-input').value })
                 // })
@@ -197,6 +203,16 @@ class App extends Component{
               .then(offer => {
                 this.signalingService.sendOfferOrAnswer(offer, myUsername, contactUsername)
               })
+          } else if(this.state.peerConnections[contactUsername].peerConnection.connectionState === 'disconnected') {
+            let newPeerConnections = this.state.peerConnections;
+            let newDataChannels = this.state.dataChannels;
+            delete newPeerConnections[contactUsername];
+            delete newDataChannels[contactUsername];
+            this.setState({
+              ...this.state,
+              peerConnections: newPeerConnections,
+              dataChannels: newDataChannels
+            });
           }
         }
                                               
@@ -291,45 +307,44 @@ class App extends Component{
     if(this.state.isAuthenticated) {
       dom = 
       (
-      <Router>
-
+      <div>
        {/* simple bs */}
-      <Navbar bg="light" expand="md">
-        <Navbar.Brand>WebRTC Chat</Navbar.Brand>
-        <Navbar.Toggle aria-controls="basic-navbar-nav"/>
-        <Navbar.Collapse id="basic-navbar-nav">
-          <Nav>
-            <LinkContainer to="/">
-              <Nav.Link>Home</Nav.Link>
-            </LinkContainer>
-            <LinkContainer to="/chat">
-              <Nav.Link>Chat</Nav.Link>
-            </LinkContainer>
-          </Nav>
-        </Navbar.Collapse>
-      </Navbar>
-        <Row style={{marginTop: '16px'}}>
-          <Col sm={2}>
-            <OpenConnectionsTabs></OpenConnectionsTabs>
-          </Col>
-          <Col sm={10}>
-            <Switch>
-              <Route exact path="/">
-                <HomeSearch onClickSearch={this.onClickSearch}>
-                  <UserSearchResult user={this.state.foundUser} 
-                                    notFoundMessage={this.state.notFoundMessage} 
-                                    onClickConnect={this.onClickConnect.bind(this)}> 
-                  </UserSearchResult> 
-                </HomeSearch>
-              </Route>
-              <Route exact path="/chat">
-                <h1>Chat</h1>
-              </Route>
-              
-            </Switch>
-          </Col>
-        </Row>
-      </Router>
+        <Navbar bg="light" expand="md">
+          <Navbar.Brand>WebRTC Chat</Navbar.Brand>
+          <Navbar.Toggle aria-controls="basic-navbar-nav"/>
+          <Navbar.Collapse id="basic-navbar-nav">
+            <Nav>
+              <LinkContainer to="/">
+                <Nav.Link>Home</Nav.Link>
+              </LinkContainer>
+              <LinkContainer to="/chat">
+                <Nav.Link>Chat</Nav.Link>
+              </LinkContainer>
+            </Nav>
+          </Navbar.Collapse>
+        </Navbar>
+          <Row style={{marginTop: '16px'}}>
+            <Col sm={2}>
+              <OpenConnectionsTabs></OpenConnectionsTabs>
+            </Col>
+            <Col sm={10}>
+              <Switch>
+                <Route exact path="/">
+                  <HomeSearch onClickSearch={this.onClickSearch}>
+                    <UserSearchResult user={this.state.foundUser} 
+                                      notFoundMessage={this.state.notFoundMessage} 
+                                      onClickConnect={this.onClickConnect.bind(this)}> 
+                    </UserSearchResult> 
+                  </HomeSearch>
+                </Route>
+                <Route path="/chat">
+                  <h1>Chat</h1>
+                </Route>
+                
+              </Switch>
+            </Col>
+          </Row>
+        </div>
       )
     }
 
