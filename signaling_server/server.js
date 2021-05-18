@@ -75,7 +75,7 @@ app.post('/login', (req,res) => {
                if(matched) { 
                   res.status(200).json({ accessToken, refreshToken }) 
                } else { 
-                  res.status(400).json({ message: 'Wrong Username or Password'  })
+                  res.status(401).json({ message: 'Wrong Username or Password'  })
                }
             })
             .catch(error => {
@@ -84,7 +84,7 @@ app.post('/login', (req,res) => {
             })
          })
          .catch(error => {
-            res.status(400).json({message: 'Wrong Username or Password'})
+            res.status(401).json({message: 'Wrong Username or Password'})
          })
 })
 

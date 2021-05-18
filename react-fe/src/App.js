@@ -47,7 +47,10 @@ class App extends Component{
       //web_rtc_connections
       serverConnectionIsOpen: false,
       peerConnections: {},
-      dataChannels: {}
+      dataChannels: {},
+
+      //signal for openConnections re-render
+      newEstablishedConnection: null
 
     };
 
@@ -63,7 +66,10 @@ class App extends Component{
 
       this.serverConnection.onopen = (event) => {
         // change the serverConnectionState to open and authenticate websocket connection to proceed to signaling
-        this.state.serverConnectionIsOpen = true
+        this.setState({
+          ...this.state,
+          serverConnectionIsOpen: true
+        })
 
         const accessToken = window.localStorage.getItem('accessToken')
         const myUsername = this.authService.getDecodedJwt(accessToken).username
@@ -76,47 +82,65 @@ class App extends Component{
           
           const message = JSON.parse(messageEvent.data);
           console.log(message)
+          console.log(this.state.peerConnections);
           if(!this.state.peerConnections[message.from]) {
-    
-            this.state.peerConnections[message.from] = new CustomRTCPeerConnection(myUsername, message.from);
-    
-            this.state.peerConnections[message.from].peerConnection.onicecandidate = (event) => {
-              if(event.candidate) {
-                this.signalingService.sendCandidate(event.candidate, myUsername, message.from)
-              }
-            };  
+            console.log('creating connection to receiver')
+            let newPeerConnections = {...this.state.peerConnections}
+            newPeerConnections[message.from] = new CustomRTCPeerConnection(myUsername, message.from);
+            console.log(newPeerConnections)
+            this.setState({
+              ...this.state,
+              peerConnections: { ...newPeerConnections }
+            }, () => {
+              console.log(this.state.peerConnections)
+              this.state.peerConnections[message.from].peerConnection.onicecandidate = (event) => {
+                if(event.candidate) {
+                  this.signalingService.sendCandidate(event.candidate, myUsername, message.from)
+                }
+              };  
+        
+              this.state.peerConnections[message.from].peerConnection.ondatachannel = (event) => {
+                this.state.dataChannels[message.from] = event.channel;
       
-            this.state.peerConnections[message.from].peerConnection.ondatachannel = (event) => {
-              this.state.dataChannels[message.from] = event.channel;
-    
-              this.state.dataChannels[message.from].onmessage = (message) => {
-                console.log(message)
+                this.state.dataChannels[message.from].onmessage = (message) => {
+                  console.log(message)
+                }
+                
+                this.state.dataChannels[message.from].onopen = () => {
+                  // document.getElementById('send').addEventListener('click', () => {
+                  //   this.state.dataChannels[message.from].send({ message:  document.getElementById('send-message-input').value })
+                  // })
+                }
               }
-              
-              this.state.dataChannels[message.from].onopen = () => {
-                // document.getElementById('send').addEventListener('click', () => {
-                //   this.state.dataChannels[message.from].send({ message:  document.getElementById('send-message-input').value })
-                // })
-              }
-            }
-    
-            this.state.peerConnections[message.from].peerConnection.onconnectionstatechange = (event) => {
-              console.log(this.state.peerConnections[message.from].peerConnection.connectionState)
-              if (this.state.peerConnections[message.from].peerConnection.connectionState === 'connected') {
-                  console.log('PeersConnected')
+      
+              this.state.peerConnections[message.from].peerConnection.onconnectionstatechange = (event) => {
+                console.log(this.state.peerConnections[message.from].peerConnection.connectionState)
+                if (this.state.peerConnections[message.from].peerConnection.connectionState === 'connected') {
+                    console.log('PeersConnected')
+                    // to re-render openConnections component
+                    this.setState({
+                      ...this.state,
+                      newEstablishedConnection: this.state.peerConnections[message.from]
+                    });
+                } else if(this.state.peerConnections[message.from].peerConnection.connectionState === 'disconnected') {
+                  this.state.peerConnections[message.from].peerConnection.close();
   
-              } else if(this.state.peerConnections[message.from].peerConnection.connectionState === 'disconnected') {
-                let newPeerConnections = this.state.peerConnections;
-                let newDataChannels = this.state.dataChannels;
-                delete newPeerConnections[message.from];
-                delete newDataChannels[message.from];
-                this.setState({
-                  ...this.state,
-                  peerConnections: newPeerConnections,
-                  dataChannels: newDataChannels
-                });
+                  let newPeerConnections = { ...this.state.peerConnections };
+                  let newDataChannels = { ...this.state.dataChannels };
+
+                  delete newPeerConnections[message.from];
+                  if(this.state.dataChannels[message.from]) {
+                    delete newDataChannels[message.from];
+                  }
+  
+                  this.setState({
+                    ...this.state,
+                    peerConnections: newPeerConnections,
+                    dataChannels: newDataChannels
+                  });
+                }
               }
-            }
+            })
     
           }
     
@@ -135,7 +159,10 @@ class App extends Component{
             console.log('receive candidate')
             this.state.peerConnections[message.from].receiveIceCandidate(message);
           } else if(message.data.type === 'authentication error') {
-            this.state.isAuthenticated = false
+            this.setState({
+              ...this.state,
+              isAuthenticated: false
+            })
             window.localStorage.removeItem('accessToken')
             // TODO refresh token
             console.log(message)
@@ -161,65 +188,90 @@ class App extends Component{
       // check if the peerConnection dont exist with this contact
       if(!this.state.peerConnections[contactUsername]) {
           // create peerConnection if not exists with the contact
-          this.state.peerConnections[contactUsername] = new CustomRTCPeerConnection(myUsername, contactUsername)
+          let newPeerConnections = {...this.state.peerConnections }
+          newPeerConnections[contactUsername] = new CustomRTCPeerConnection(myUsername, contactUsername);
 
-          // create a iceCandidate event listener for the connection
-          this.state.peerConnections[contactUsername].peerConnection.onicecandidate = (event) => {
-            if(event.candidate) {
-              this.signalingService.sendCandidate(event.candidate, myUsername, contactUsername)
-            }
-          }
+          // first change state with the new PeerConnection then create the dataChannel and then add the listeners
+          // and sends the offer
+          this.setState({
+            ...this.state,
+            peerConnections: {...newPeerConnections}
+            }, 
 
-          // create a dataChannel for the connection and saves it to the state
-          this.state.dataChannels[contactUsername] = this.state.peerConnections[contactUsername]
-                                                    .peerConnection.createDataChannel('chat-messages')
-          
-          this.state.peerConnections[contactUsername].peerConnection.onconnectionstatechange = (event) => {
-          console.log(this.state.peerConnections[contactUsername].peerConnection.connectionState)
+            //callback after peerConnections state changed
+            () => {
+              
+              // create a dataChannel for the connection and saves it to the state
+              let newDataChannel = this.state.peerConnections[contactUsername]
+              .peerConnection.createDataChannel('chat-messages')
+              let newDataChannels = {...this.state.dataChannels}
+              newDataChannels[contactUsername] = this.state.peerConnections[contactUsername]
+                                                 .peerConnection.createDataChannel('chat-messages')
 
-          if (this.state.peerConnections[contactUsername].peerConnection.connectionState === 'connected') {
-              // this.setState({ ...this.state, redirect: "/chat" });
-              console.log('PeersConnected')
-              this.state.dataChannels[contactUsername].onopen = () => {
-                console.log('ChatOpened')
+              this.setState({
+                ...this.state,
+                dataChannels: {...newDataChannels}
+              }, 
+              // peerconnection and dataChannel listeners
+              () => {
+                // create a iceCandidate event listener for the connection
+                this.state.peerConnections[contactUsername].peerConnection.onicecandidate = (event) => {
+                  if(event.candidate) {
+                    this.signalingService.sendCandidate(event.candidate, myUsername, contactUsername)
+                  }
+                }
+                
+                this.state.peerConnections[contactUsername].peerConnection.onconnectionstatechange = (event) => {
+                console.log(this.state.peerConnections[contactUsername].peerConnection.connectionState)
 
-                this.props.history.push('/chat')
-                this.forceUpdate()
-                // this.setState({
-                //   ...this.state,
-                //   redirect:'/chat'
-                // })
-                // document.getElementById('send').addEventListener('click', () => {
-                //   this.state.dataChannels[contactUsername].send({ message:  document.getElementById('send-message-input').value })
-                // })
-                this.state.dataChannels[contactUsername].onmessage = (message) => {
-                  // createElement('messages','PARAGRAPH',message.data)
-                  console.log(message)
+                if (this.state.peerConnections[contactUsername].peerConnection.connectionState === 'connected') {
+                    // this.setState({ ...this.state, redirect: "/chat" });
+                    console.log('PeersConnected')
+
+                    this.state.dataChannels[contactUsername].onopen = () => {
+                      console.log('ChatOpened')
+                      // theres no need for that because openConnection will be re-render after routing ! 
+                      this.setState({
+                        ...this.state,
+                        newEstablishedConnection: this.state.peerConnections[contactUsername]
+                      });
+
+                      this.props.history.push('/chat')
+                      // document.getElementById('send').addEventListener('click', () => {
+                      //   this.state.dataChannels[contactUsername].send({ message:  document.getElementById('send-message-input').value })
+                      // })
+                      this.state.dataChannels[contactUsername].onmessage = (message) => {
+                        // createElement('messages','PARAGRAPH',message.data)
+                        console.log(message)
+                      }
+                    }
+                } else if(this.state.peerConnections[contactUsername].peerConnection.connectionState === 'failed') {
+                    this.state.peerConnections[contactUsername].peerConnection.restartIce();
+                    this.state.peerConnections[contactUsername].createOffer()
+                    .then(offer => {
+                      this.signalingService.sendOfferOrAnswer(offer, myUsername, contactUsername)
+                    })
+                } else if(this.state.peerConnections[contactUsername].peerConnection.connectionState === 'disconnected') {
+                  this.state.peerConnections[contactUsername].peerConnection.close();
+                  let newPeerConnections = this.state.peerConnections;
+                  let newDataChannels = this.state.dataChannels;
+                  delete newPeerConnections[contactUsername];
+                  delete newDataChannels[contactUsername];
+                  this.setState({
+                    ...this.state,
+                    peerConnections: newPeerConnections,
+                    dataChannels: newDataChannels
+                  });
                 }
               }
-          } else if(this.state.peerConnections[contactUsername].peerConnection.connectionState === 'failed') {
-              this.state.peerConnections[contactUsername].peerConnection.restartIce();
-              this.state.peerConnections[contactUsername].createOffer()
+            
+            //send the offer
+            this.state.peerConnections[contactUsername].createOffer()
               .then(offer => {
                 this.signalingService.sendOfferOrAnswer(offer, myUsername, contactUsername)
               })
-          } else if(this.state.peerConnections[contactUsername].peerConnection.connectionState === 'disconnected') {
-            let newPeerConnections = this.state.peerConnections;
-            let newDataChannels = this.state.dataChannels;
-            delete newPeerConnections[contactUsername];
-            delete newDataChannels[contactUsername];
-            this.setState({
-              ...this.state,
-              peerConnections: newPeerConnections,
-              dataChannels: newDataChannels
-            });
-          }
-        }
-                                              
-        this.state.peerConnections[contactUsername].createOffer()
-          .then(offer => {
-            this.signalingService.sendOfferOrAnswer(offer, myUsername, contactUsername)
-          })
+            })
+        });
         
       } else {
         console.log('connection exists')
@@ -325,7 +377,7 @@ class App extends Component{
         </Navbar>
           <Row style={{marginTop: '16px'}}>
             <Col sm={2}>
-              <OpenConnectionsTabs></OpenConnectionsTabs>
+              <OpenConnectionsTabs peerConnections={this.state.peerConnections} newEstablishedConnection={this.state.newEstablishedConnection}></OpenConnectionsTabs>
             </Col>
             <Col sm={10}>
               <Switch>
