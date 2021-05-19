@@ -1,10 +1,11 @@
 import { React, Component } from 'react'
 import './App.css';
-import Message from './Message/Message'
+import Message from './Chat/Message/Message'
 import LoginOrRegister from './Login/Login'
 import HomeSearch from './HomeSearch/HomeSearch'
 import UserSearchResult from './UserSearchResult/UserSearchResult'
 import OpenConnectionsTabs from './OpenConnectionTabs/OpenConnectionTabs'
+import ChatContainer from './Chat/ChatContainer/ChatContainer'
 import {
   Switch,
   Route,
@@ -18,7 +19,7 @@ import SearchService from './Services/SearchService';
 import SignalingService from './Services/SignalingService';
 import CustomRTCPeerConnection from './Utils/CustomRTCPeerConnection'
 import HandleConnectionsService from './Services/HandleConnectionsService';
-import message from './Message/Message';
+import message from './Chat/Message/Message';
 
 
 class App extends Component{
@@ -50,7 +51,9 @@ class App extends Component{
       dataChannels: {},
 
       //signal for openConnections re-render
-      newEstablishedConnection: null
+      newEstablishedConnection: null,
+      //selectedTab
+      selectedTabContactName: null
 
     };
 
@@ -282,6 +285,19 @@ class App extends Component{
     }
   }
 
+  //openConnectionsTabsComponent 
+  onClickTab = (event) => {
+    let selectedTabContactName = event.target.innerText
+    if(this.state.selectedTabContactName !== selectedTabContactName){
+      this.setState({
+        ...this.state,
+        selectedTabContactName: selectedTabContactName
+      });
+    }
+
+  }
+
+
   // LoginOrRegister component
   onClickLogin = (username, password) => {
     this.authService.login(username, password)
@@ -376,10 +392,15 @@ class App extends Component{
           </Navbar.Collapse>
         </Navbar>
           <Row style={{marginTop: '16px'}}>
-            <Col sm={2}>
-              <OpenConnectionsTabs peerConnections={this.state.peerConnections} newEstablishedConnection={this.state.newEstablishedConnection}></OpenConnectionsTabs>
+            <Col sm={3} md={2}>
+              <OpenConnectionsTabs peerConnections={this.state.peerConnections} 
+                                   newEstablishedConnection={this.state.newEstablishedConnection}
+                                   onClickTab={this.onClickTab.bind(this)}
+                                   selectedTab={this.state.selectedTabContactName}
+                                   >
+              </OpenConnectionsTabs>
             </Col>
-            <Col sm={10}>
+            <Col sm={9} md={10}>
               <Switch>
                 <Route exact path="/">
                   <HomeSearch onClickSearch={this.onClickSearch}>
@@ -390,7 +411,9 @@ class App extends Component{
                   </HomeSearch>
                 </Route>
                 <Route path="/chat">
-                  <h1>Chat</h1>
+                  <ChatContainer contactName={this.state.selectedTabContactName}>
+
+                  </ChatContainer>
                 </Route>
                 
               </Switch>

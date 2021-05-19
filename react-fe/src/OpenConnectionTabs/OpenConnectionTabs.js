@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Container , Row, Col, ListGroup } from 'react-bootstrap'
+import  ConnectionTab from '../ConnectionTab/ConnectionTab'
 import { Nav, Tab } from 'react-bootstrap'
 
 const OpenConnectionsTabs = (props) => {
@@ -7,10 +8,11 @@ const OpenConnectionsTabs = (props) => {
     let openConnections = []
     for(const [key, value] of Object.entries(props.peerConnections)) {
         if(value.peerConnection.connectionState === 'connected') {
-            openConnections.push(            
-                (<Nav.Item key={key}>
-                    <Nav.Link eventKey={key}>{key}</Nav.Link>
-                </Nav.Item>)
+            openConnections.push(   
+                (<ConnectionTab key={key} name={key} 
+                                onClickTab={props.onClickTab} 
+                                selectedTab={props.selectedTab}>
+                </ConnectionTab>)         
             )
         }
     }
@@ -19,11 +21,8 @@ const OpenConnectionsTabs = (props) => {
 
     return (
     <Tab.Container id="left-tabs-example">
-        <h5>Open Connections</h5>
-
-        <Nav variant="pills" className="flex-column">
-            { openConnections.map(connectionItem => connectionItem) }
-        </Nav>
+        <p>Open Connections</p>
+        { openConnections.map(connectionItem => connectionItem) }
     </Tab.Container>
     )
 }
