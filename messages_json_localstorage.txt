@@ -1,0 +1,7 @@
+contactUsername: {
+		    messages: {
+				text: 
+				datetime:
+				owner: me/other
+			      }
+		 }

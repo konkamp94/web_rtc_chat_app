@@ -1,12 +1,22 @@
 import React from 'react'
 
-const message = (props) => {
+const Message = (props) => {
+    let sender = props.sender
+    let message = props.message
+    let datetime = props.datetime
+    console.log(datetime)
     return (
         <div>
-            <p>Hi {props.name}</p>
-            {props.children}
+            <span>{sender}</span>
+            <br></br>
+            <span>--------------</span>
+            <br></br>
+            <span>{message}</span>
+            <br></br>
+            <span style={{textAlign:'right'}}>{datetime}</span>
+            <span>--------------</span>
         </div>
     );
 }
 
-export default message
+export default Message

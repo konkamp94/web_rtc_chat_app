@@ -53,7 +53,15 @@ class App extends Component{
       //signal for openConnections re-render
       newEstablishedConnection: null,
       //selectedTab
-      selectedTabContactName: null
+      selectedTabContactName: null,
+      //contactUsername: {
+      //     messagesList: {
+              		// text: 
+              		// datetime:
+              		// owner: me/other
+      // 	      }
+      //  }
+      messages:{}
 
     };
 
@@ -62,23 +70,25 @@ class App extends Component{
   }
 
   openSignalingWebsocketConnection = () => {
+    
     if(this.state.isAuthenticated) {
       //open the signaling websocket connection
+      
       this.serverConnection = new WebSocket('ws://localhost:9090/signaling');
       this.signalingService = new SignalingService(this.serverConnection);
 
+      const accessToken = window.localStorage.getItem('accessToken')
+      const myUsername = this.authService.getDecodedJwt(accessToken).username
+     
       this.serverConnection.onopen = (event) => {
+
         // change the serverConnectionState to open and authenticate websocket connection to proceed to signaling
         this.setState({
           ...this.state,
           serverConnectionIsOpen: true
         })
-
-        const accessToken = window.localStorage.getItem('accessToken')
-        const myUsername = this.authService.getDecodedJwt(accessToken).username
-
+        
         this.signalingService.sendAuthenticationMessage(accessToken, this.authService.getDecodedJwt(accessToken).username)
-
 
         // listen messages from signaling server
         this.serverConnection.onmessage = (messageEvent) => {
@@ -105,8 +115,17 @@ class App extends Component{
               this.state.peerConnections[message.from].peerConnection.ondatachannel = (event) => {
                 this.state.dataChannels[message.from] = event.channel;
       
-                this.state.dataChannels[message.from].onmessage = (message) => {
-                  console.log(message)
+                this.state.dataChannels[message.from].onmessage = (messageEvent) => {
+
+                  let messagesWithAContact = this.state.messages[message.from]
+                  messagesWithAContact.push({owner: message.from, text: messageEvent.data, datatime: new Date()})
+                  let messages = this.state.messages
+                  messages[message.from] = messagesWithAContact
+
+                  this.setState({
+                    ...this.state,
+                    messages: messages
+                  })
                 }
                 
                 this.state.dataChannels[message.from].onopen = () => {
@@ -120,11 +139,15 @@ class App extends Component{
                 console.log(this.state.peerConnections[message.from].peerConnection.connectionState)
                 if (this.state.peerConnections[message.from].peerConnection.connectionState === 'connected') {
                     console.log('PeersConnected')
-                    // to re-render openConnections component
+                    let messages = {...this.state.messages}
+                    messages[message.from] = []
+                    // to re-render openConnections component and update messages table
                     this.setState({
                       ...this.state,
-                      newEstablishedConnection: this.state.peerConnections[message.from]
+                      newEstablishedConnection: this.state.peerConnections[message.from],
+                      messages: messages
                     });
+
                 } else if(this.state.peerConnections[message.from].peerConnection.connectionState === 'disconnected') {
                   this.state.peerConnections[message.from].peerConnection.close();
   
@@ -186,7 +209,7 @@ class App extends Component{
     const myUsername = this.authService.getDecodedJwt(accessToken).username
 
     // check if the signaling ws connection is open
-    if(this.state.serverConnectionIsOpen) {
+    if(this.state.serverConnectionIsOpen && this.state.foundUser.isOnline) {
 
       // check if the peerConnection dont exist with this contact
       if(!this.state.peerConnections[contactUsername]) {
@@ -233,18 +256,32 @@ class App extends Component{
 
                     this.state.dataChannels[contactUsername].onopen = () => {
                       console.log('ChatOpened')
+
+                      let messages = {...this.state.messages}
+                      messages[contactUsername] = []
                       // theres no need for that because openConnection will be re-render after routing ! 
                       this.setState({
                         ...this.state,
-                        newEstablishedConnection: this.state.peerConnections[contactUsername]
+                        newEstablishedConnection: this.state.peerConnections[contactUsername],
+                        messages: messages
                       });
-
+                      console.log(this.state)
                       this.props.history.push('/chat')
                       // document.getElementById('send').addEventListener('click', () => {
                       //   this.state.dataChannels[contactUsername].send({ message:  document.getElementById('send-message-input').value })
                       // })
                       this.state.dataChannels[contactUsername].onmessage = (message) => {
-                        // createElement('messages','PARAGRAPH',message.data)
+                            
+                            // add a message
+                            let messagesWithAContact = this.state.messages[contactUsername]
+                            messagesWithAContact.push({owner: contactUsername, text: message.data, datatime:new Date()})
+                            let messages = this.state.messages
+                            messages[contactUsername] = messagesWithAContact
+
+                            this.setState({
+                              ...this.state,
+                              messages: messages
+                            })
                         console.log(message)
                       }
                     }
@@ -281,7 +318,7 @@ class App extends Component{
       }
 
     } else {
-      console.log('No websocket connection')
+      console.log('No websocket connection or contact is offline')
     }
   }
 
@@ -297,6 +334,24 @@ class App extends Component{
 
   }
 
+  onClickSend = (message) => {
+    const myUsername = this.authService.getDecodedJwt(window.localStorage.getItem('accessToken')).username;
+    if(message !== '') {
+      let datetime = new Date()
+      this.state.dataChannels[this.state.selectedTabContactName].send(message);
+      
+      // add a message
+      let messagesWithAContact = this.state.messages[this.state.selectedTabContactName]
+      messagesWithAContact.push({owner: myUsername, text: message, datatime:datetime})
+      let messages = this.state.messages
+      messages[this.state.selectedTabContactName] = messagesWithAContact
+
+      this.setState({
+        ...this.state,
+        messages: messages
+      })
+    }
+  }
 
   // LoginOrRegister component
   onClickLogin = (username, password) => {
@@ -411,8 +466,9 @@ class App extends Component{
                   </HomeSearch>
                 </Route>
                 <Route path="/chat">
-                  <ChatContainer contactName={this.state.selectedTabContactName}>
-
+                  <ChatContainer contactName={this.state.selectedTabContactName}
+                                messagesList={this.state.messages[this.state.selectedTabContactName]}
+                                onClickSend={this.onClickSend}>
                   </ChatContainer>
                 </Route>
                 

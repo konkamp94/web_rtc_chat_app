@@ -156,14 +156,25 @@ wss.on('connection', function(connection) {
             connection.send(JSON.stringify("usernames dont match!"))
             connection.close()
          }
-         console.log('user' + activeConnections)
+         // console.log('user' + activeConnections)
       } else {
          // check if is logged in to send the second message and not close the connection
          connection.send(JSON.stringify("First Authenticate yourself to send signaling messages or send the right message type"))
          connection.close()
       }
       console.log("Got message from a user:", message);
-   }); 
+   });
+
+   connection.on('close', () => {
+      console.log("connection closed")
+      for(const username in activeConnections) {
+         if(activeConnections[username] === connection) {
+            console.log("find a key with username")
+            delete activeConnections[username]
+            break;
+         } 
+      }
+   });
 	
    // connection.send(JSON.stringify({offer: 'offer', user: 'oman'})); 
 });
