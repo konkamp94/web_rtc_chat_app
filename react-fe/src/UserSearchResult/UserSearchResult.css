@@ -13,3 +13,8 @@
     border-radius: 50%;
     display: inline-block;
 }
+
+.fas:hover {
+  cursor: pointer;
+  color: darkred;
+}

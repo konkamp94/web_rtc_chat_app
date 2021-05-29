@@ -32,6 +32,7 @@ class App extends Component{
     this.handleConnectionsService = new HandleConnectionsService();
     this.signalingService = null;
     this.serverConnection = null;
+    this.myUsername = null;
     this.state = {
       //for routing
       redirect: null,
@@ -50,6 +51,7 @@ class App extends Component{
       peerConnections: {},
       dataChannels: {},
 
+      connecting: false,
       //signal for openConnections re-render
       newEstablishedConnection: null,
       //selectedTab
@@ -64,14 +66,14 @@ class App extends Component{
       messages:{}
 
     };
-
-    this.openSignalingWebsocketConnection()
-
+    if(this.state.isAuthenticated) {
+      this.openSignalingWebsocketConnection();
+      this.myUsername = this.authService.getDecodedJwt(window.localStorage.getItem('accessToken')).username;
+    }
   }
 
   openSignalingWebsocketConnection = () => {
     
-    if(this.state.isAuthenticated) {
       //open the signaling websocket connection
       
       this.serverConnection = new WebSocket('ws://localhost:9090/signaling');
@@ -89,23 +91,21 @@ class App extends Component{
         })
         
         this.signalingService.sendAuthenticationMessage(accessToken, this.authService.getDecodedJwt(accessToken).username)
-
+        
         // listen messages from signaling server
         this.serverConnection.onmessage = (messageEvent) => {
           
           const message = JSON.parse(messageEvent.data);
-          console.log(message)
-          console.log(this.state.peerConnections);
+
           if(!this.state.peerConnections[message.from]) {
             console.log('creating connection to receiver')
             let newPeerConnections = {...this.state.peerConnections}
             newPeerConnections[message.from] = new CustomRTCPeerConnection(myUsername, message.from);
-            console.log(newPeerConnections)
+
             this.setState({
               ...this.state,
               peerConnections: { ...newPeerConnections }
             }, () => {
-              console.log(this.state.peerConnections)
               this.state.peerConnections[message.from].peerConnection.onicecandidate = (event) => {
                 if(event.candidate) {
                   this.signalingService.sendCandidate(event.candidate, myUsername, message.from)
@@ -116,9 +116,10 @@ class App extends Component{
                 this.state.dataChannels[message.from] = event.channel;
       
                 this.state.dataChannels[message.from].onmessage = (messageEvent) => {
-
+                  const text = JSON.parse(messageEvent.data).message;
+                  const datetime = JSON.parse(messageEvent.data).datetime
                   let messagesWithAContact = this.state.messages[message.from]
-                  messagesWithAContact.push({owner: message.from, text: messageEvent.data, datatime: new Date()})
+                  messagesWithAContact.push({owner: message.from, text: text, datetime: datetime})
                   let messages = this.state.messages
                   messages[message.from] = messagesWithAContact
 
@@ -128,11 +129,6 @@ class App extends Component{
                   })
                 }
                 
-                this.state.dataChannels[message.from].onopen = () => {
-                  // document.getElementById('send').addEventListener('click', () => {
-                  //   this.state.dataChannels[message.from].send({ message:  document.getElementById('send-message-input').value })
-                  // })
-                }
               }
       
               this.state.peerConnections[message.from].peerConnection.onconnectionstatechange = (event) => {
@@ -153,16 +149,21 @@ class App extends Component{
   
                   let newPeerConnections = { ...this.state.peerConnections };
                   let newDataChannels = { ...this.state.dataChannels };
+                  let selectedTabContactName = this.state.selectedTabContactName;
 
                   delete newPeerConnections[message.from];
                   if(this.state.dataChannels[message.from]) {
                     delete newDataChannels[message.from];
                   }
+                  if(this.state.selectedTabContactName === message.from) {
+                    selectedTabContactName = null
+                  }
   
                   this.setState({
                     ...this.state,
                     peerConnections: newPeerConnections,
-                    dataChannels: newDataChannels
+                    dataChannels: newDataChannels,
+                    selectedTabContactName: selectedTabContactName
                   });
                 }
               }
@@ -198,12 +199,11 @@ class App extends Component{
         }
 
       }
-    }
   }
 
-  onClickConnect() {
+  onClickConnect = () => {
+
     // take the username that you found from your search
-    console.log(this.onClickConnect)
     const contactUsername = this.state.foundUser.username
     const accessToken = window.localStorage.getItem('accessToken')
     const myUsername = this.authService.getDecodedJwt(accessToken).username
@@ -213,6 +213,7 @@ class App extends Component{
 
       // check if the peerConnection dont exist with this contact
       if(!this.state.peerConnections[contactUsername]) {
+
           // create peerConnection if not exists with the contact
           let newPeerConnections = {...this.state.peerConnections }
           newPeerConnections[contactUsername] = new CustomRTCPeerConnection(myUsername, contactUsername);
@@ -221,7 +222,8 @@ class App extends Component{
           // and sends the offer
           this.setState({
             ...this.state,
-            peerConnections: {...newPeerConnections}
+            peerConnections: {...newPeerConnections},
+            connecting: true
             }, 
 
             //callback after peerConnections state changed
@@ -255,7 +257,6 @@ class App extends Component{
                     console.log('PeersConnected')
 
                     this.state.dataChannels[contactUsername].onopen = () => {
-                      console.log('ChatOpened')
 
                       let messages = {...this.state.messages}
                       messages[contactUsername] = []
@@ -263,18 +264,18 @@ class App extends Component{
                       this.setState({
                         ...this.state,
                         newEstablishedConnection: this.state.peerConnections[contactUsername],
-                        messages: messages
+                        messages: messages,
+                        connecting: false
                       });
-                      console.log(this.state)
+                      
                       this.props.history.push('/chat')
-                      // document.getElementById('send').addEventListener('click', () => {
-                      //   this.state.dataChannels[contactUsername].send({ message:  document.getElementById('send-message-input').value })
-                      // })
-                      this.state.dataChannels[contactUsername].onmessage = (message) => {
-                            
+
+                      this.state.dataChannels[contactUsername].onmessage = (messageEvent) => {
+                          const text = JSON.parse(messageEvent.data).message;
+                          const datetime = JSON.parse(messageEvent.data).datetime
                             // add a message
                             let messagesWithAContact = this.state.messages[contactUsername]
-                            messagesWithAContact.push({owner: contactUsername, text: message.data, datatime:new Date()})
+                            messagesWithAContact.push({owner: contactUsername, text: text, datetime: datetime})
                             let messages = this.state.messages
                             messages[contactUsername] = messagesWithAContact
 
@@ -318,8 +319,21 @@ class App extends Component{
       }
 
     } else {
-      console.log('No websocket connection or contact is offline')
+      console.log('websocket connection or contact is offline')
     }
+  }
+
+  onClickAbortConnection = () => {
+
+    this.state.peerConnections[this.state.foundUser.username].peerConnection.close();
+    let newPeerConnections = this.state.peerConnections;
+    delete newPeerConnections[this.state.foundUser.username];
+
+    this.setState({
+      ...this.state,
+      peerConnections: newPeerConnections,
+      connecting:false
+    });
   }
 
   //openConnectionsTabsComponent 
@@ -332,17 +346,19 @@ class App extends Component{
       });
     }
 
+    this.props.history.push('/chat')
+
   }
 
   onClickSend = (message) => {
     const myUsername = this.authService.getDecodedJwt(window.localStorage.getItem('accessToken')).username;
     if(message !== '') {
       let datetime = new Date()
-      this.state.dataChannels[this.state.selectedTabContactName].send(message);
+      this.state.dataChannels[this.state.selectedTabContactName].send(JSON.stringify({ message, datetime}));
       
       // add a message
       let messagesWithAContact = this.state.messages[this.state.selectedTabContactName]
-      messagesWithAContact.push({owner: myUsername, text: message, datatime:datetime})
+      messagesWithAContact.push({owner: myUsername, text: message, datetime:datetime})
       let messages = this.state.messages
       messages[this.state.selectedTabContactName] = messagesWithAContact
 
@@ -458,15 +474,19 @@ class App extends Component{
             <Col sm={9} md={10}>
               <Switch>
                 <Route exact path="/">
-                  <HomeSearch onClickSearch={this.onClickSearch}>
+                  <HomeSearch onClickSearch={this.onClickSearch}
+                              connecting={this.state.connecting}>
                     <UserSearchResult user={this.state.foundUser} 
                                       notFoundMessage={this.state.notFoundMessage} 
-                                      onClickConnect={this.onClickConnect.bind(this)}> 
+                                      onClickConnect={this.onClickConnect.bind(this)}
+                                      onClickAbortConnection={this.onClickAbortConnection.bind(this)}
+                                      connecting={this.state.connecting}> 
                     </UserSearchResult> 
                   </HomeSearch>
                 </Route>
                 <Route path="/chat">
                   <ChatContainer contactName={this.state.selectedTabContactName}
+                                 myUsername={this.myUsername}
                                 messagesList={this.state.messages[this.state.selectedTabContactName]}
                                 onClickSend={this.onClickSend}>
                   </ChatContainer>

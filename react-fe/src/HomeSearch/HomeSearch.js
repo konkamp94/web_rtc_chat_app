@@ -15,7 +15,7 @@ const HomeSearch = (props) => {
                         <Form.Control ref={(ref) => {searchByUsernameInput = ref}} type="text" placeholder="Search for your friend" />
                 </Col>
                 <Col xs={12} sm={3}>
-                   <button className="btn btn-primary" style={{width:'100%'}} onClick={() => props.onClickSearch(searchByUsernameInput.value)}> Search </button>
+                   <button disabled={props.connecting} className="btn btn-primary" style={{width:'100%'}} onClick={() => props.onClickSearch(searchByUsernameInput.value)}> Search </button>
                 </Col>
             </Row>
             {/* searchResult */}

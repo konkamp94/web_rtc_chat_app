@@ -20,7 +20,7 @@ const OpenConnectionsTabs = (props) => {
     console.log(openConnections)
 
     return (
-    <Tab.Container id="left-tabs-example">
+    <Tab.Container>
         <p>Open Connections</p>
         { openConnections.map(connectionItem => connectionItem) }
     </Tab.Container>

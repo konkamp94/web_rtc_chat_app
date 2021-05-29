@@ -5,7 +5,8 @@ import './UserSearchResult.css';
 const UserSearchResult = (props) => {
 
     let template = null
-    
+    let waiting = null
+    console.log(props.connecting)
     if(props.notFoundMessage && props.user === null) {
         template = (<h1> user not found </h1>)
     } else if (!props.notFoundMessage && props.user) {
@@ -15,6 +16,19 @@ const UserSearchResult = (props) => {
         } else {
             connectionStatusIcon = <span className="offline-dot" ></span>
         }
+        if(props.connecting) {
+            console.log(props.connecting)
+            waiting = (
+                <Row>
+                    <Col xs={{span: 3}} sm={{span: 2, offset:1}}>
+                        <p>Connecting...</p>
+                    </Col>
+                    <Col xs={{span: 1}} sm={{span: 1}}>
+                        <i className="fas fa-times" onClick={() => props.onClickAbortConnection()}></i>
+                    </Col>
+                </Row> 
+            )
+        } 
 
         template = (
             <Container>
@@ -31,11 +45,12 @@ const UserSearchResult = (props) => {
                                 <Card.Text>
                                     {props.user.description}
                                 </Card.Text>
-                                <Button variant="primary" onClick={() => props.onClickConnect()}>Connect</Button>
+                                <Button disabled={props.connecting} variant="primary" onClick={() => props.onClickConnect()}>Connect</Button>
                             </Card.Body>
                         </Card>
                     </Col>
                 </Row>
+                {waiting}
             </Container>
         )
     } 

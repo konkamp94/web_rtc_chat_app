@@ -1,10 +1,11 @@
 import { React } from 'react'
 import {Container, Row, Col} from 'react-bootstrap'
 import Message from '../Message/Message'
-
+import '../ChatContainer/ChatContainer.css'
 const ChatContainer = (props) => {
 
     let contactName = props.contactName
+    let myUsername = props.myUsername
     let messagesList = props.messagesList
     console.log(messagesList)
     if(!contactName) {
@@ -17,33 +18,55 @@ const ChatContainer = (props) => {
 
     let messages = []
     for(let i=0; i<messagesList.length;i++) {
-        messages.push(<Message
-                               key={i} 
-                               sender={messagesList[i].owner}
-                               message={messagesList[i].text}
-                               datetime={messagesList[i].datetime}
-                      ></Message>)
+        if(messagesList[i].owner === myUsername) {
+            messages.push(<Message
+                                key={i} 
+                                isMyMessage={true}
+                                sender={messagesList[i].owner}
+                                message={messagesList[i].text}
+                                datetime={messagesList[i].datetime}
+                        ></Message>)
+        } else {
+            console.log('not me')
+            messages.push(<Message
+                key={i} 
+                isMyMessage={false}
+                sender={messagesList[i].owner}
+                message={messagesList[i].text}
+                datetime={messagesList[i].datetime}
+        ></Message>)
+        }
     }
 
     let messageInput
     return (
         <Container fluid>
-            <p> {contactName} </p>
-            <Row>
-                <Col xs={12}>
-                    <div style={{height:'300px'}}>
-                        {/* messages array */}
-                        {/* list of messages */}
-                        {messages}
+                <header className="msger-header">
+                    <div className="msger-header-title">
+                        <i className="fas fa-comment"></i> {contactName}
                     </div>
-                </Col>
-                <Col xs={9}>
-                    <input ref={(ref) => {messageInput = ref}} type="text" placeholder="new message" style={{width:'100%'}}></input>
-                </Col>
-                <Col xs={3}>
-                    <button onClick={() => props.onClickSend(messageInput.value)} style={{width:'100%'}}>Send</button>
-                </Col>
-            </Row>
+                </header>
+
+                <Row>
+                   
+                        <Col xs={12}>
+                            <div style={{height:'450px', overflowY:'auto'}}>
+                                {/* messages array */}
+                                {/* list of messages */}
+                                {messages}
+                            </div>
+                        </Col>
+                       
+                        <Col xs={9} style={{marginTop:'8px'}}>
+                            <input className="form-control" ref={(ref) => {messageInput = ref}} type="text" placeholder="new message" style={{width:'100%'}}></input>
+                        </Col>
+                        <Col xs={3} style={{marginTop:'8px'}}>
+                            <button className="btn btn-primary" onClick={() => { 
+                                props.onClickSend(messageInput.value) 
+                                messageInput.value = ''
+                                }} style={{width:'100%'}}>Send</button>
+                        </Col>
+                </Row>
         </Container>
     )
 }
