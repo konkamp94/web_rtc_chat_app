@@ -14,7 +14,7 @@
     display: inline-block;
 }
 
-.fas:hover {
+.fas-times:hover {
   cursor: pointer;
   color: darkred;
 }
