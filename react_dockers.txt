@@ -1,0 +1,4 @@
+#build react image
+docker build -t react-f:builded . -f ./docker/nginx/Dockerfile 
+
+docker run -p 3000:80 -it --name react-fe-wev-rtc -v /Users/"Vic Rattlehead"/Desktop/web_rtc_chat_app/react-fe/build:/var/www/html  react-fe:builded
