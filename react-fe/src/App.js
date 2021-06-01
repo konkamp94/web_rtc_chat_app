@@ -380,6 +380,7 @@ class App extends Component{
           isAuthenticated: true
         }
       )
+      this.myUsername = this.authService.getDecodedJwt(window.localStorage.getItem('accessToken')).username;
       this.openSignalingWebsocketConnection()
     })
     .catch(error => console.log(error.response.message))
