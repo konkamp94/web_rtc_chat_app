@@ -31,7 +31,7 @@ app.use(cors())
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.post('/register', (req, res) => {
+app.post('/api/register', (req, res) => {
       bcrypt.hash(req.body.password, 10, function(err, hash) {
          if(err) {
             res.status(500).json({ error: err });
@@ -64,7 +64,7 @@ app.post('/register', (req, res) => {
       });
 })
 
-app.post('/login', (req,res) => {
+app.post('/api/login', (req,res) => {
    const user = User.findOne({ where: { username: req.body.username } })
          .then((user) => {
             bcrypt.compare(req.body.password, user.password).then(matched => {
@@ -89,7 +89,7 @@ app.post('/login', (req,res) => {
 })
 
 //TO DO: add a middleware for authentication
-app.get('/user', (req,res) => {
+app.get('/api/user', (req,res) => {
    const usernameSearchString = req.query.username
    const users = User.findOne({
       where:{
@@ -114,7 +114,7 @@ app.get('/user', (req,res) => {
 let server = http.createServer(app);
 
 //creating a websocket route at port /signaling 
-var wss = new WebSocketServer({server: server, path: "/signaling"});
+var wss = new WebSocketServer({server: server, path: "/api/signaling"});
 let activeConnections = {}
 //when a user connects to our server 
 wss.on('connection', function(connection) { 

@@ -75,9 +75,9 @@ class App extends Component{
   openSignalingWebsocketConnection = () => {
 
       // development
-      const ws_api_url = 'ws://localhost:9090'
+      // const ws_api_url = 'ws://localhost:9090/api'
       //  production
-      // const ws_api_url = 'ws://ec2-18-219-127-149.us-east-2.compute.amazonaws.com'
+      const ws_api_url = 'ws://ec2-18-219-127-149.us-east-2.compute.amazonaws.com/api'
 
       //open the signaling websocket connection
       this.serverConnection = new WebSocket(`${ws_api_url}/signaling`);
