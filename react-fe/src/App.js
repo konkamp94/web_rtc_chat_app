@@ -75,7 +75,7 @@ class App extends Component{
   openSignalingWebsocketConnection = () => {
 
       // development
-      const ws_api_url = process.env.WS_URL ?? 'ws://localhost:7070/api'
+      const ws_api_url = process.env.REACT_APP_WS_URL ?? 'ws://localhost:7070/api'
       //  production
       // const ws_api_url = 'ws://ec2-18-219-127-149.us-east-2.compute.amazonaws.com/api'
 

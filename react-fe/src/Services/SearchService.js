@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import axios from 'axios'
 
 // development
-const api_url = process.env.API_URL ?? 'http://localhost:7070/api'
+const api_url = process.env.REACT_APP_API_URL ?? 'http://localhost:7070/api'
 
 export default class SearchService extends Component{
     searchByUsername = (username) => {

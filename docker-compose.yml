@@ -5,11 +5,13 @@ services:
         build:
             context: .
             dockerfile: ./react-fe/docker/nginx-react-fe/Dockerfile
-        ports: 
+            args:
+                API_URL: $API_URL
+                WS_URL: $WS_URL
+        ports:
             - 7070:80
         restart: always
-        env_file:
-            - .env
+        env_file: .env
 
     db: 
         container_name: postgres-web-rtc
