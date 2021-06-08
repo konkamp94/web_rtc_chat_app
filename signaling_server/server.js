@@ -67,21 +67,22 @@ app.post('/api/register', (req, res) => {
 app.post('/api/login', (req,res) => {
    const user = User.findOne({ where: { username: req.body.username } })
          .then((user) => {
-            bcrypt.compare(req.body.password, user.password).then(matched => {
+            return bcrypt.compare(req.body.password, user.password)
+         })
+         .then(matched => {
                let accessToken = generateAccessToken(user.username);
 
                // authenticateSocketConnection(accessToken);
                let refreshToken = generateRefreshToken(user.username);
-               if(matched) { 
-                  res.status(200).json({ accessToken, refreshToken }) 
-               } else { 
+               if(matched) {
+                  res.status(200).json({ accessToken, refreshToken })
+               } else {
                   res.status(401).json({ message: 'Wrong Username or Password'  })
                }
             })
-            .catch(error => {
-               console.log(error)
-               res.status(500).json(error);
-            })
+         .catch(error => {
+            console.log(error)
+            res.status(500).json(error);
          })
          .catch(error => {
             res.status(401).json({message: 'Wrong Username or Password'})
