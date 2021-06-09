@@ -115,7 +115,7 @@ app.get('/api/user', (req,res) => {
 let server = http.createServer(app);
 
 //creating a websocket route at port /signaling 
-var wss = new WebSocketServer({server: server, path: "/api/signaling/"});
+var wss = new WebSocketServer({server: server, path: "/api/signaling"});
 let activeConnections = {}
 //when a user connects to our server 
 wss.on('connection', function(connection) { 
