@@ -1,0 +1,1 @@
+docker-compose down && docker image rm web_rtc_chat_app_front-end && npm run build && docker-compose up -d

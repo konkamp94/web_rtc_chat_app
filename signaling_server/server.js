@@ -67,21 +67,21 @@ app.post('/api/register', (req, res) => {
 app.post('/api/login', (req,res) => {
    const user = User.findOne({ where: { username: req.body.username } })
          .then((user) => {
-            bcrypt.compare(req.body.password, user.password).then(matched => {
-               let accessToken = generateAccessToken(user.username);
-
-               // authenticateSocketConnection(accessToken);
-               let refreshToken = generateRefreshToken(user.username);
-               if(matched) { 
-                  res.status(200).json({ accessToken, refreshToken }) 
-               } else { 
+            return { matched: bcrypt.compare(req.body.password, user.password), user }
+         })
+         .then(result => {
+               if(result.matched) {
+                  let accessToken = generateAccessToken(result.user.username);
+                  // authenticateSocketConnection(accessToken);
+                  let refreshToken = generateRefreshToken(result.user.username);
+                  res.status(200).json({ accessToken, refreshToken })
+               } else {
                   res.status(401).json({ message: 'Wrong Username or Password'  })
                }
             })
-            .catch(error => {
-               console.log(error)
-               res.status(500).json(error);
-            })
+         .catch(error => {
+            console.log(error)
+            res.status(500).json(error);
          })
          .catch(error => {
             res.status(401).json({message: 'Wrong Username or Password'})
@@ -97,10 +97,10 @@ app.get('/api/user', (req,res) => {
       }
    })
    .then((result) => {
-      console.warn(result)
+      console.log(result.username)
       if(result) {
          let isOnline = activeConnections[result.username] ? true : false
-         console.warn(activeConnections[result.username])
+         console.log(activeConnections[result.username])
          res.status(200).json({ username: result.username, description: 'desc', isOnline })
       } else {
          res.status(404).json({message: `user with username ${usernameSearchString} not found` })
@@ -148,7 +148,9 @@ wss.on('connection', function(connection) {
       else if(message.data.type === 'authentication') {
          let authentication = authenticateSocketConnection(message.data.accessToken, message.from)
          if(authentication.authenticated) {
+            console.log('authenticated')
             activeConnections[message.from] = connection 
+            console.log(activeConnections)
          } else if(authentication.error){
             connection.send(JSON.stringify({data: { type: 'authentication error', error: authentication.error } }))
             connection.close()

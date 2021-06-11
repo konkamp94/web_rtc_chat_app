@@ -1,23 +1,30 @@
 version: '3'
 services: 
     front-end:
+        depends_on:
+            -   back-end
         container_name: web-rtc-chat-react-fe-and-nginx
         build:
             context: .
             dockerfile: ./react-fe/docker/nginx-react-fe/Dockerfile
-        ports: 
+        ports:
             - 7070:80
         restart: always
 
     db: 
         container_name: postgres-web-rtc
-        image: postgres
+        build:
+            context: .
+            dockerfile: ./postgres/Dockerfile
         volumes:
             - postgres-data:/var/lib/postgresql/data
         restart: always
         environment:
+            POSTGRES_USERNAME: postgres
             POSTGRES_PASSWORD: postgres
-    
+            POSTGRES_DB: postgres
+
+
     adminer:
         image: adminer
         restart: always
@@ -25,12 +32,17 @@ services:
             - 8080:8080
     
     back-end:
+        depends_on:
+            -   db
         container_name: signaling-server
         build:
             context: .
             dockerfile: ./signaling_server/docker/node-signaling-server/Dockerfile
         ports: 
             - 9090:9090
+        environment:
+            TOKEN_SECRET: 'token_secret'
+            REFRESH_TOKEN_SECRET: 'refresh_token_secret'
 
 volumes:
     postgres-data:

@@ -1,5 +1,5 @@
 FROM nginx
- 
+
 WORKDIR /var
 RUN mkdir -p /var/www/html
 
