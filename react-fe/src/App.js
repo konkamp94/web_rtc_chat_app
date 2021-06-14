@@ -85,7 +85,11 @@ class App extends Component{
 
       const accessToken = window.localStorage.getItem('accessToken')
       const myUsername = this.authService.getDecodedJwt(accessToken).username
-     
+
+      this.serverConnection.onclose = (event) => {
+        this.openSignalingWebsocketConnection()
+      }
+
       this.serverConnection.onopen = (event) => {
 
         // change the serverConnectionState to open and authenticate websocket connection to proceed to signaling
