@@ -97,7 +97,6 @@ app.get('/api/user', (req,res) => {
       }
    })
    .then((result) => {
-      console.log(result.username)
       if(result) {
          let isOnline = activeConnections[result.username] ? true : false
          console.log(activeConnections[result.username])
