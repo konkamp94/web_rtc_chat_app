@@ -15,5 +15,4 @@ RUN npm install
 
 # Bundle app source
 COPY ./signaling_server ./
-CMD [ "node", "server.js" ]
 # ENTRYPOINT [ "./docker/node-signaling-server/entrypoint.sh" ]
