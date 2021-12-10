@@ -4,7 +4,7 @@ ENV API_URL="http://ec2-18-219-127-149.us-east-2.compute.amazonaws.com/api"
 ENV WS_URL="ws://ec2-18-219-127-149.us-east-2.compute.amazonaws.com/api"
 
 # file is copied from: https://deb.nodesource.com/setup_15.x
-COPY ./react-fe/docker/nginx-react-fe/setup_node.sh /tmp/setup_node.sh
+#COPY ./react-fe/docker/nginx-react-fe/setup_node.sh /tmp/setup_node.sh
 
 COPY ./react-fe /tmp/react-fe
 
@@ -12,7 +12,7 @@ WORKDIR /tmp/react-fe
 
 RUN apt update
 RUN apt -y install curl gnupg
-RUN curl -sL https://deb.nodesource.com/setup_15.x  | bash -
+RUN curl -sL https://deb.nodesource.com/setup_16.x  | bash -
 RUN apt -y install nodejs
 RUN npm install
 RUN REACT_APP_API_URL=$API_URL REACT_APP_WS_URL=$WS_URL npm run build
