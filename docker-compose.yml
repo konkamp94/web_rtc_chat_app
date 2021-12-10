@@ -35,6 +35,7 @@ services:
         depends_on:
             -   db
         container_name: signaling-server
+        command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; node server.js'
         build:
             context: .
             dockerfile: ./signaling_server/docker/node-signaling-server/Dockerfile
