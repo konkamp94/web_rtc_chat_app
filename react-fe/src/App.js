@@ -391,7 +391,7 @@ class App extends Component{
       this.myUsername = this.authService.getDecodedJwt(window.localStorage.getItem('accessToken')).username;
       this.openSignalingWebsocketConnection()
     })
-    .catch(error => console.log(error.response.message))
+    .catch(error => console.log(error))
   }
 
   onClickRegister = (username, password) => {
@@ -403,7 +403,7 @@ class App extends Component{
       })
       console.log(res) 
     })
-    .catch(error => console.log(error.response.data.message))
+    .catch(error => console.log(error))
   }
 
   toggleFormType = () => {
