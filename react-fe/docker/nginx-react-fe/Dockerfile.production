@@ -1,7 +1,7 @@
 FROM nginx
 
-ENV API_URL="http://ec2-18-220-21-200.us-east-2.compute.amazonaws.com/api"
-ENV WS_URL="ws://ec2-18-220-21-200.us-east-2.compute.amazonaws.com/api"
+ENV API_URL="http://ec2-18-118-6-251.us-east-2.compute.amazonaws.com/api"
+ENV WS_URL="ws://ec2-18-118-6-251.us-east-2.compute.amazonaws.com/api"
 
 # file is copied from: https://deb.nodesource.com/setup_15.x
 #COPY ./react-fe/docker/nginx-react-fe/setup_node.sh /tmp/setup_node.sh
